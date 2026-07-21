@@ -6,8 +6,6 @@ Veil checks product demos and screen recordings for accidentally exposed API key
 
 ![Veil dashboard screenshot](assets/veil-dashboard.png)
 
-> **Add your screenshot here:** create an `assets` folder in the project root and save a dashboard screenshot as `assets/veil-dashboard.png`. GitHub will automatically display it above once you push the image.
-
 ## Why I built this
 
 Screen recordings are easy to share and easy to get wrong. A product demo can accidentally reveal credentials, customer information, or private team conversations in a single frame. Veil explores a privacy-first review step that happens before a recording leaves the team.
