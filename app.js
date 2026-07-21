@@ -8,7 +8,7 @@ $$('.ledger-row').forEach(row=>row.addEventListener('click',()=>selectFinding(ro
 $$('.marker').forEach(marker=>marker.addEventListener('click',()=>note(`${marker.dataset.risk} selected on the timeline.`)));
 $('.approve').addEventListener('click',()=>{ if(remaining>0) remaining--; updateCount(); $('.approve').innerHTML='<i data-lucide="check"></i> Tracked blur applied'; $('.approve').style.background='#a7cc5b'; $('.approve').disabled=true; lucide.createIcons(); note('Tracked blur applied. The original pixels remain in your vault.'); });
 $('.ignore').addEventListener('click',()=>note('Marked intentionally visible. Veil will include this decision in the receipt.'));
-$('#play').addEventListener('click',()=>{ playing=!playing; $('#play').innerHTML=playing?'<i data-lucide="pause"></i>':'<i data-lucide="play"></i>'; lucide.createIcons(); if(playing){let pos=43;timer=setInterval(()=>{pos=(pos+.6)%100;$('#playhead').style.left=pos+'%';$('#time').textContent=`00:${String(Math.floor(pos*.42)).padStart(2,'0')}.${Math.floor(pos*10)%10}`},120)}else clearInterval(timer);});
+// Demo playback is initialized after the scene definitions below.
 $('#openReceipt').addEventListener('click',()=>{ $('#receipt').classList.add('open');$('#receipt').setAttribute('aria-hidden','false'); }); $('.modal-close').addEventListener('click',()=>$('#receipt').classList.remove('open')); $('#receipt').addEventListener('click',e=>{if(e.target===$('#receipt'))$('#receipt').classList.remove('open')});
 $('.export').addEventListener('click',()=>{const blob=new Blob(['VEIL REVIEW RECEIPT\nStatus: Safe to share\nReviewed findings: 4\nTracked transformations: 1'],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='veil-review-receipt.txt';a.click();URL.revokeObjectURL(a.href);note('Signed review receipt exported.');});
 $('.new-scan').addEventListener('click',()=>note('Drop a recording here to start a privacy pre-flight.')); $('.review-all').addEventListener('click',()=>document.querySelector('.risk-list').scrollIntoView({behavior:'smooth'}));
@@ -52,3 +52,76 @@ videoInput.addEventListener('change',async event=>{
   $('#fileName').textContent=file.name; userVideo.src=URL.createObjectURL(file); $('.screen').classList.add('has-upload'); $('.fake-browser').style.display='none'; await waitFor(userVideo,'loadedmetadata'); $('#duration').textContent=formatTime(userVideo.duration); note('Video loaded locally. Starting frame analysis.'); scanUploadedVideo();
 });
 $('.new-scan').addEventListener('click',()=>videoInput.click());
+
+// Native fullscreen when available; reliable in-page fallback for local-file previews.
+const preview = $('.screen');
+const exitPreview = document.createElement('button');
+exitPreview.className = 'exit-preview';
+exitPreview.setAttribute('aria-label', 'Exit fullscreen preview');
+exitPreview.innerHTML = '<i data-lucide="x"></i><span>Exit fullscreen</span>';
+preview.appendChild(exitPreview);
+function refreshFullscreenControl() {
+  const expanded = Boolean(document.fullscreenElement) || preview.classList.contains('fallback-fullscreen');
+  $('.expand').querySelector('i').setAttribute('data-lucide', expanded ? 'minimize-2' : 'maximize-2');
+  $('.expand').setAttribute('aria-label', expanded ? 'Exit fullscreen preview' : 'Open recording preview in fullscreen');
+  lucide.createIcons();
+}
+async function exitPreviewFullscreen() {
+  if (document.fullscreenElement) await document.exitFullscreen();
+  preview.classList.remove('fallback-fullscreen');
+  document.body.classList.remove('preview-open');
+  refreshFullscreenControl();
+}
+$('.expand').addEventListener('click', async () => {
+  if (preview.classList.contains('fallback-fullscreen')) { await exitPreviewFullscreen(); return; }
+  preview.classList.add('fallback-fullscreen');
+  document.body.classList.add('preview-open');
+  note('Opened expanded preview. Press Escape or use the close button to exit.');
+  refreshFullscreenControl();
+});
+exitPreview.addEventListener('click', exitPreviewFullscreen);
+document.addEventListener('fullscreenchange', refreshFullscreenControl);
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && preview.classList.contains('fallback-fullscreen')) exitPreviewFullscreen(); });
+
+// Side navigation follows the review workflow instead of opening dead-end sections.
+$$('[data-page]').forEach(item => item.addEventListener('click', () => {
+  const destination = { scan: 'header', findings: '.risk-list', receipt: '.proof' }[item.dataset.page];
+  if (destination) document.querySelector(destination).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}));
+
+// A moving, realistic review scenario: each timeline marker lines up with the risky screen.
+const demoBrowser = $('.fake-browser');
+const demoScenes = [
+  { time: '00:06.2', position: 12, risk: null, label: 'Project overview', html: `<div class="browser-bar"><i></i><i></i><i></i><span>app.mercury.dev/projects</span></div><div class="demo-shell"><div class="demo-nav"><i class="active"></i><i></i><i></i><i></i></div><div class="demo-main"><div class="demo-top"><h4>Projects</h4><span class="demo-chip">3 active</span></div><div class="demo-columns"><div class="demo-block"><b></b><div class="demo-lines"><span></span><span></span><span></span></div></div><div class="demo-block"><b></b><div class="demo-lines"><span></span><span></span></div></div></div><div class="demo-block" style="margin-top:10px"><b></b><div class="demo-lines"><span></span><span></span><span></span></div></div><span class="scene-caption">Normal product screen</span></div></div>` },
+  { time: '00:18.4', position: 17, risk: 0, label: 'Developer console · API key visible', html: `<div class="browser-bar"><i></i><i></i><i></i><span>app.mercury.dev/settings/developer</span></div><div class="demo-shell"><div class="demo-nav"><i></i><i></i><i class="active"></i><i></i></div><div class="demo-main"><div class="demo-top"><h4>Developer settings</h4><span class="demo-chip">Production</span></div><div class="console">$ mercury env list<br><span class="warn">warning: secrets are visible in this output</span><br>STRIPE_SECRET_KEY=<span class="secret">sk_live_4e9Kx2Q…</span><br>WEBHOOK_ENDPOINT=/billing/events</div><span class="scene-caption">Finding: credential in console</span></div></div>` },
+  { time: '00:25.7', position: 43, risk: 1, label: 'Customer workspace · personal data visible', html: `<div class="browser-bar"><i></i><i></i><i></i><span>app.mercury.dev/customers</span></div><div class="demo-shell"><div class="demo-nav"><i></i><i class="active"></i><i></i><i></i></div><div class="demo-main"><div class="demo-top"><h4>Customer workspace</h4><span class="demo-chip">Account owner</span></div><div class="customer-card"><span class="customer-avatar"></span><div><b class="customer-name">Amara Iqbal</b><small>Northwind Health · Enterprise plan</small></div></div><div class="demo-block" style="margin-top:10px"><b></b><div class="demo-lines"><span></span><span></span><span></span></div></div><span class="scene-caption">Finding: customer PII</span></div></div>` },
+  { time: '00:31.2', position: 64, risk: 2, label: 'Slack message · private context visible', html: `<div class="browser-bar"><i></i><i></i><i></i><span>slack.com/client/mercury</span></div><div class="slack-layout"><div class="slack-left"><b>Mercury</b><span># product</span><span># launch</span><span>🔒 nina + sam</span></div><div class="slack-chat"><h4>nina + sam</h4><div class="message"><b>Sam · 10:24 AM</b>Are we still planning to hold the enterprise announcement?</div><div class="message private"><b>Nina · 10:26 AM</b>Yes. Legal asked us not to mention the customer name in the demo.</div></div></div>` }
+];
+let demoIndex = 0; let demoTimer;
+function renderDemoScene(index) {
+  const scene = demoScenes[index];
+  demoBrowser.classList.add('demo-switch');
+  setTimeout(() => {
+    demoBrowser.innerHTML = scene.html;
+    demoBrowser.classList.remove('demo-switch');
+    $('#time').textContent = scene.time;
+    $('#playhead').style.left = `${scene.position}%`;
+    $('.scrub-label').textContent = `FRAME ANALYSIS · ${scene.time}`;
+    $('.screen').classList.toggle('demo-safe', scene.risk === null);
+    $$('.marker').forEach((marker, i) => marker.classList.toggle('active', i === scene.risk));
+    if (scene.risk !== null) selectFinding($$('.ledger-row')[scene.risk]);
+    $('.pin-one span').textContent = scene.risk === 0 ? 'API key' : scene.risk === 2 ? 'Private message' : 'Customer data';
+    $('.pin-two').style.opacity = scene.risk === 0 || scene.risk === 2 ? '.3' : '1';
+  }, 180);
+}
+function advanceDemo() { demoIndex = (demoIndex + 1) % demoScenes.length; renderDemoScene(demoIndex); }
+function toggleDemoPlayback() {
+  playing = !playing;
+  $('#play').innerHTML = playing ? '<i data-lucide="pause"></i>' : '<i data-lucide="play"></i>';
+  lucide.createIcons();
+  clearInterval(demoTimer);
+  if (playing) demoTimer = setInterval(advanceDemo, 3600);
+}
+$('#play').addEventListener('click', toggleDemoPlayback);
+renderDemoScene(0);
+demoTimer = setInterval(advanceDemo, 3600);
