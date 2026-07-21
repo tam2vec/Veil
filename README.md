@@ -4,6 +4,8 @@
 
 Veil checks product demos and screen recordings for accidentally exposed API keys, customer data, and private messages before they are shared. It surfaces the moment of exposure, supports a tracked-redaction decision, and produces a review receipt documenting what changed.
 
+**[Open the live demo →](https://tam2vec.github.io/Veil/)**
+
 ![Veil dashboard screenshot](assets/veil-dashboard.png)
 
 ## Why I built this
