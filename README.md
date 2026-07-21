@@ -1,27 +1,28 @@
 # Veil
 
-Veil is a privacy pre-flight system for product demos and screen recordings. It flags accidental exposure of credentials, customer data, and private conversations before a recording is shared.
+Veil is a browser-based privacy preflight tool for screen recordings.
 
-## Product thesis
+Before sharing a product demo, Veil helps identify accidentally exposed API keys, customer data, and private messages. It shows when the exposure appears, lets a reviewer apply a tracked blur, and produces a review receipt documenting what changed.
 
-The riskiest moment in a demo is often the moment right before a share link is created. Veil turns an anxious, manual scrub into a defensible review: detect private surfaces, apply tracked redactions, and export a review receipt.
+## How it works
 
-## Interactive prototype
+1. Upload a screen recording.
+2. Veil samples frames locally in the browser.
+3. OCR reads visible text and checks for common API-key, email, and phone-number patterns.
+4. Findings appear in a review timeline.
+5. Apply a tracked blur or mark a finding intentionally visible.
+6. Export a review receipt.
 
-- Screen-level detection overlay for credentials and customer PII.
-- Timeline with exposure markers, risk levels, and frame navigation.
-- A tracked-blur decision that updates the review state.
-- Exportable review receipt documenting transformations and review status.
-- Upload a local video: Veil samples five frames, runs OCR in the browser, and flags recognizable API-key, email, and phone patterns. No frames are sent to an application server.
+## Privacy
 
-## Run
+Video frames are processed locally in the browser by this prototype. They are not uploaded to an application server.
 
-Open `index.html` in a browser. This dependency-light prototype uses Lucide and Google Fonts from CDNs.
+## Run locally
 
-Run `npm test` for lightweight quality checks. A GitHub Actions workflow runs the same check on pushes and pull requests.
+Open `index.html` in a browser.
 
-## Deliberate next production steps
+## Tech
 
-1. Add face detection and visual classification for non-text private surfaces.
-2. Store immutable review receipts and reviewer approvals.
-3. Add role-based policy packs for sales demos, support recordings, and regulated teams.
+- HTML, CSS, and JavaScript
+- Tesseract.js for browser-side OCR
+- Lucide icons
